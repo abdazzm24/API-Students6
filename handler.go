@@ -191,10 +191,6 @@ func getStudent(c *fiber.Ctx) error {
 }
 
 func createStudent(c *fiber.Ctx) error {
-	if err := requireJSON(c); err != nil {
-		return err
-	}
-
 	var req CreateStudentRequest
 
 	if err := c.BodyParser(&req); err != nil {
@@ -249,10 +245,6 @@ func createStudent(c *fiber.Ctx) error {
 }
 
 func replaceStudent(c *fiber.Ctx) error {
-	if err := requireJSON(c); err != nil {
-		return err
-	}
-
 	id, err := parseID(c)
 
 	if err != nil {
@@ -327,10 +319,6 @@ func replaceStudent(c *fiber.Ctx) error {
 }
 
 func patchStudent(c *fiber.Ctx) error {
-	if err := requireJSON(c); err != nil {
-		return err
-	}
-
 	id, err := parseID(c)
 
 	if err != nil {

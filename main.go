@@ -33,9 +33,9 @@ func main() {
 
 	studentsAPI.Get("/", listStudents)
 	studentsAPI.Get("/:id", getStudent)
-	studentsAPI.Post("/", createStudent)
-	studentsAPI.Put("/:id", replaceStudent)
-	studentsAPI.Patch("/:id", patchStudent)
+	studentsAPI.Post("/", requireJSON, createStudent)
+	studentsAPI.Put("/:id", requireJSON, replaceStudent)
+	studentsAPI.Patch("/:id", requireJSON, patchStudent)
 	studentsAPI.Delete("/:id", deleteStudent)
 
 	app.Use(func(c *fiber.Ctx) error {

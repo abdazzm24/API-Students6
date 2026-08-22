@@ -80,12 +80,7 @@ func sendError(
 }
 
 func requireJSON(c *fiber.Ctx) error {
-	contentType := c.Get("Content-Type")
-
-	if !strings.HasPrefix(
-		strings.ToLower(contentType),
-		"application/json",
-	) {
+	if !c.Is("json") {
 		return sendError(
 			c,
 			fiber.StatusUnsupportedMediaType,
@@ -94,7 +89,7 @@ func requireJSON(c *fiber.Ctx) error {
 		)
 	}
 
-	return nil
+	return c.Next()
 }
 
 func parseID(c *fiber.Ctx) (int, error) {
