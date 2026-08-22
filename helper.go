@@ -1,82 +1,240 @@
-package main 
-  
-import ( 
-    "strconv" 
-    "strings" 
-  
-    "github.com/gofiber/fiber/v2" 
-) 
-  
-func ok(c *fiber.Ctx, message string, data any) error { 
-    return c.Status(fiber.StatusOK).JSON(WebResponse{ 
-        Success: true, Message: message, Data: data, 
-    }) 
-} 
-  
-func okList(c *fiber.Ctx, message string, data any, meta *Meta) error { 
-    return c.Status(fiber.StatusOK).JSON(WebResponse{ 
-        Success: true, Message: message, Data: data, Meta: meta, 
-    }) 
+package main
+
+import (
+	"fmt"
+	"math"
+	"strconv"
+	"strings"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+const maxLimit = 100
+
+var allowedSortFields = map[string]bool{
+	"id":        true,
+	"nim":       true,
+	"name":      true,
+	"grade":     true,
+	"is_active": true,
 }
-  
-func created(c *fiber.Ctx, message string, data any, location string) error { 
-    c.Set("Location", location) // memberi tahu klien di mana sumber daya baru berada 
-    return c.Status(fiber.StatusCreated).JSON(WebResponse{ 
-        Success: true, Message: message, Data: data, 
-    }) 
-} 
-  
-func noContent(c *fiber.Ctx) error { 
-    return c.SendStatus(fiber.StatusNoContent) // 204: berhasil, tanpa body 
-} 
-  
-func fail(c *fiber.Ctx, status int, message string) error { 
-    return c.Status(status).JSON(WebResponse{Success: false, Message: message}) 
-} 
-  
-func failValidation(c *fiber.Ctx, errs map[string]string) error { 
-    return c.Status(fiber.StatusUnprocessableEntity).JSON(WebResponse{ 
-        Success: false, Message: "validasi gagal", Errors: errs, 
-    }) 
-} 
-  
-// Daftar putih field yang boleh dipakai untuk mengurutkan. 
-var allowedSort = map[string]bool{ 
-    "id": true, "username": true, "email": true, "created_at": true, 
-} 
-  
-// parseListQuery membaca query string dan memberi nilai bawaan yang aman. 
-// Aturan pentingnya: masukan dari klien tidak pernah dipercaya begitu saja. 
-func parseListQuery(c *fiber.Ctx) ListQuery { 
-    q := ListQuery{ 
-        Page:   c.QueryInt("page", 1), 
-        Limit:  c.QueryInt("limit", 10), 
-        Search: strings.TrimSpace(c.Query("search")), 
-        Sort:   c.Query("sort", "id"), 
-        Order:  strings.ToLower(c.Query("order", "asc")), 
-    } 
-  
-    if q.Page < 1 { 
-        q.Page = 1 
-    } 
-    if q.Limit < 1 { 
-        q.Limit = 10 
-    } 
-    if q.Limit > 100 { // batas atas wajib ada 
-        q.Limit = 100 
-    } 
-    if !allowedSort[q.Sort] { // daftar putih, bukan daftar hitam 
-        q.Sort = "id" 
-    } 
-    if q.Order != "desc" { 
-        q.Order = "asc" 
-    } 
-  
-    if raw := c.Query("is_active"); raw != "" { 
-        if v, err := strconv.ParseBool(raw); err == nil { 
-            q.IsActive = &v 
-        } 
-    } 
-  
-    return q 
+
+func sendResponse(
+	c *fiber.Ctx,
+	status int,
+	message string,
+	data any,
+	meta *Meta,
+	errors any,
+) error {
+	return c.Status(status).JSON(WebResponse{
+		Success: status >= 200 && status < 300,
+		Message: message,
+		Data:    data,
+		Meta:    meta,
+		Errors:  errors,
+	})
+}
+
+func sendSuccess(
+	c *fiber.Ctx,
+	status int,
+	message string,
+	data any,
+) error {
+	return sendResponse(c, status, message, data, nil, nil)
+}
+
+func sendCreated(
+	c *fiber.Ctx,
+	message string,
+	data any,
+	location string,
+) error {
+	c.Set("Location", location)
+
+	return sendResponse(
+		c,
+		fiber.StatusCreated,
+		message,
+		data,
+		nil,
+		nil,
+	)
+}
+
+func sendError(
+	c *fiber.Ctx,
+	status int,
+	message string,
+	errors any,
+) error {
+	return sendResponse(
+		c,
+		status,
+		message,
+		nil,
+		nil,
+		errors,
+	)
+}
+
+func requireJSON(c *fiber.Ctx) error {
+	contentType := c.Get("Content-Type")
+
+	if !strings.HasPrefix(
+		strings.ToLower(contentType),
+		"application/json",
+	) {
+		return sendError(
+			c,
+			fiber.StatusUnsupportedMediaType,
+			"Content-Type harus application/json",
+			nil,
+		)
+	}
+
+	return nil
+}
+
+func parseID(c *fiber.Ctx) (int, error) {
+	id, err := strconv.Atoi(c.Params("id"))
+
+	if err != nil {
+		return 0, fmt.Errorf("id harus berupa angka")
+	}
+
+	return id, nil
+}
+
+func parseListQuery(c *fiber.Ctx) (ListQuery, error) {
+	page := c.QueryInt("page", 1)
+	limit := c.QueryInt("limit", 10)
+
+	if page < 1 {
+		page = 1
+	}
+
+	if limit < 1 {
+		limit = 10
+	}
+
+	if limit > maxLimit {
+		limit = maxLimit
+	}
+
+	search := strings.TrimSpace(c.Query("search"))
+
+	sort := strings.ToLower(
+		strings.TrimSpace(c.Query("sort", "id")),
+	)
+
+	if !allowedSortFields[sort] {
+		return ListQuery{}, fmt.Errorf(
+			"field sort '%s' tidak diperbolehkan",
+			sort,
+		)
+	}
+
+	order := strings.ToLower(
+		strings.TrimSpace(c.Query("order", "asc")),
+	)
+
+	if order != "asc" && order != "desc" {
+		return ListQuery{}, fmt.Errorf(
+			"order harus asc atau desc",
+		)
+	}
+
+	query := ListQuery{
+		Page:   page,
+		Limit:  limit,
+		Search: search,
+		Sort:   sort,
+		Order:  order,
+	}
+
+	if active := c.Context().QueryArgs().Peek("is_active"); len(active) > 0 {
+		value, err := strconv.ParseBool(string(active))
+
+		if err != nil {
+			return ListQuery{}, fmt.Errorf(
+				"is_active harus true atau false",
+			)
+		}
+
+		query.IsActive = &value
+	}
+
+	return query, nil
+}
+
+func validateCreateRequest(req CreateStudentRequest) map[string]string {
+	errors := make(map[string]string)
+
+	if strings.TrimSpace(req.NIM) == "" {
+		errors["nim"] = "NIM wajib diisi"
+	}
+
+	if strings.TrimSpace(req.Name) == "" {
+		errors["name"] = "nama wajib diisi"
+	}
+
+	if req.Grade < 0 || req.Grade > 100 {
+		errors["grade"] = "grade harus berada pada rentang 0 sampai 100"
+	}
+
+	return errors
+}
+
+func validateReplaceRequest(req ReplaceStudentRequest) map[string]string {
+	errors := make(map[string]string)
+
+	if strings.TrimSpace(req.NIM) == "" {
+		errors["nim"] = "NIM wajib diisi"
+	}
+
+	if strings.TrimSpace(req.Name) == "" {
+		errors["name"] = "nama wajib diisi"
+	}
+
+	if req.Grade < 0 || req.Grade > 100 {
+		errors["grade"] = "grade harus berada pada rentang 0 sampai 100"
+	}
+
+	return errors
+}
+
+func validatePatchRequest(req PatchStudentRequest) map[string]string {
+	errors := make(map[string]string)
+
+	if req.NIM != nil && strings.TrimSpace(*req.NIM) == "" {
+		errors["nim"] = "NIM tidak boleh kosong"
+	}
+
+	if req.Name != nil && strings.TrimSpace(*req.Name) == "" {
+		errors["name"] = "nama tidak boleh kosong"
+	}
+
+	if req.Grade != nil && (*req.Grade < 0 || *req.Grade > 100) {
+		errors["grade"] = "grade harus berada pada rentang 0 sampai 100"
+	}
+
+	return errors
+}
+
+func calculatePagination(
+	page int,
+	limit int,
+	total int,
+) (int, int) {
+	totalPages := 0
+
+	if total > 0 {
+		totalPages = int(
+			math.Ceil(float64(total) / float64(limit)),
+		)
+	}
+
+	return page, totalPages
 }

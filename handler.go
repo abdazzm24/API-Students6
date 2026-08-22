@@ -11,22 +11,22 @@ import (
 var students = []Student{
 	{
 		ID:       1,
-		NIM:      "11223344",
+		NIM:      "434241118",
 		Name:     "Abdullah Azzam",
 		Grade:    85,
 		IsActive: true,
 	},
 	{
 		ID:       2,
-		NIM:      "11223345",
-		Name:     "Budi Santoso",
+		NIM:      "434241119",
+		Name:     "Diaul Haq",
 		Grade:    78,
 		IsActive: true,
 	},
 	{
 		ID:       3,
-		NIM:      "11223346",
-		Name:     "Citra Lestari",
+		NIM:      "434241200",
+		Name:     "Anshari Shidqi",
 		Grade:    92,
 		IsActive: false,
 	},
