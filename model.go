@@ -1,33 +1,12 @@
 package main
 
-type Student struct {
-	ID       int     `json:"id"`
-	NIM      string  `json:"nim"`
-	Name     string  `json:"name"`
-	Grade    float64 `json:"grade"`
-	IsActive bool    `json:"is_active"`
-}
+import "api-students/repository"
 
-type CreateStudentRequest struct {
-	NIM      string  `json:"nim"`
-	Name     string  `json:"name"`
-	Grade    float64 `json:"grade"`
-	IsActive bool    `json:"is_active"`
-}
-
-type ReplaceStudentRequest struct {
-	NIM      string  `json:"nim"`
-	Name     string  `json:"name"`
-	Grade    float64 `json:"grade"`
-	IsActive bool    `json:"is_active"`
-}
-
-type PatchStudentRequest struct {
-	NIM      *string  `json:"nim,omitempty"`
-	Name     *string  `json:"name,omitempty"`
-	Grade    *float64 `json:"grade,omitempty"`
-	IsActive *bool    `json:"is_active,omitempty"`
-}
+type Student = repository.Student
+type CreateStudentRequest = repository.CreateStudentRequest
+type ReplaceStudentRequest = repository.ReplaceStudentRequest
+type PatchStudentRequest = repository.PatchStudentRequest
+type StudentRepository = repository.StudentRepository
 
 type WebResponse struct {
 	Success bool   `json:"success"`

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -232,4 +234,11 @@ func calculatePagination(
 	}
 
 	return page, totalPages
+}
+
+func reqCtx(c *fiber.Ctx) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(
+		c.UserContext(),
+		5*time.Second,
+	)
 }
