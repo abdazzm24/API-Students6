@@ -3,19 +3,16 @@ package config
 import (
 	"log/slog"
 
-	"api-students/app/service"
 	"api-students/helper"
 	"api-students/middleware"
 	"api-students/route"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func NewApp(
-	pool *pgxpool.Pool,
-	studentService *service.StudentService,
 	logger *slog.Logger,
+	deps route.Dependencies,
 ) *fiber.App {
 
 	app := fiber.New(
@@ -45,8 +42,7 @@ func NewApp(
 
 	route.Register(
 		app,
-		pool,
-		studentService,
+		deps,
 	)
 
 	app.Use(

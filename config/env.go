@@ -1,7 +1,6 @@
 package config
 
 import (
-	"log"
 	"os"
 	"strconv"
 
@@ -9,31 +8,40 @@ import (
 )
 
 func LoadEnv() {
-	if err := godotenv.Load(); err != nil {
-		log.Println("peringatan: .env tidak ditemukan")
-	}
+
+	_ = godotenv.Load()
 }
 
-func GetEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok && value != "" {
-		return value
-	}
+func GetEnv(
+	key string,
+	fallback string,
+) string {
 
-	return fallback
-}
+	value := os.Getenv(key)
 
-func GetEnvInt(key string, fallback int) int {
-	value, ok := os.LookupEnv(key)
-
-	if !ok || value == "" {
+	if value == "" {
 		return fallback
 	}
 
-	parsed, err := strconv.Atoi(value)
+	return value
+}
+
+func GetEnvInt(
+	key string,
+	fallback int,
+) int {
+
+	value := os.Getenv(key)
+
+	if value == "" {
+		return fallback
+	}
+
+	result, err := strconv.Atoi(value)
 
 	if err != nil {
 		return fallback
 	}
 
-	return parsed
+	return result
 }

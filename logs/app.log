@@ -2,3 +2,5 @@
 {"time":"2026-08-31T10:36:02.1035309+07:00","level":"INFO","msg":"http_request","request_id":"","method":"GET","path":"/favicon.ico","status":404,"duration":0}
 {"time":"2026-08-31T10:36:06.5516575+07:00","level":"INFO","msg":"http_request","request_id":"","method":"GET","path":"/api/v1/students","status":200,"duration":102322500}
 {"time":"2026-08-31T10:36:14.8206284+07:00","level":"INFO","msg":"http_request","request_id":"","method":"GET","path":"/api/v1/health","status":200,"duration":0}
+{"time":"2026-08-31T11:15:33.4345092+07:00","level":"INFO","msg":"http_request","request_id":"","method":"GET","path":"/","status":404,"duration":1002100}
+{"time":"2026-08-31T11:15:34.0938893+07:00","level":"INFO","msg":"http_request","request_id":"","method":"GET","path":"/favicon.ico","status":404,"duration":0}
