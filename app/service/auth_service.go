@@ -19,6 +19,7 @@ type AuthService struct {
 	users      repository.UserRepository
 	tokens     repository.TokenRepository
 	jwt        *helper.JWTManager
+	perms      *helper.PermissionSet
 	refreshTTL time.Duration
 }
 
@@ -26,6 +27,7 @@ func NewAuthService(
 	users repository.UserRepository,
 	tokens repository.TokenRepository,
 	jwtManager *helper.JWTManager,
+	perms *helper.PermissionSet,
 	refreshTTL time.Duration,
 ) *AuthService {
 
@@ -33,6 +35,7 @@ func NewAuthService(
 		users:      users,
 		tokens:     tokens,
 		jwt:        jwtManager,
+		perms:      perms,
 		refreshTTL: refreshTTL,
 	}
 }
@@ -378,7 +381,10 @@ func (s *AuthService) Me(
 		c,
 		fiber.StatusOK,
 		"profil berhasil diambil",
-		user,
+		fiber.Map{
+			"user":        user,
+			"permissions": s.perms.PermissionsOf(user.Role),
+		},
 	)
 }
 

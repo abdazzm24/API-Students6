@@ -1,45 +1,34 @@
 package service
 
-import "api-students/helper"
-
-// StudentAuthUser adalah identitas user yang digunakan
-// untuk pemeriksaan authorization.
-//
-// Struktur ini dibuat terpisah agar aturan authorization
-// tidak bergantung pada Fiber atau repository.
-type StudentAuthUser struct {
-	ID   int
-	Role string
-}
+import (
+	"api-students/app/model"
+	"api-students/helper"
+)
 
 // CanAccessStudent menentukan apakah user boleh mengakses
-// sebuah data student.
+// data student tertentu.
 //
-// Aturan:
+// User boleh mengakses jika:
 //
-// 1. Jika user memiliki permission anyPermission,
-//    user boleh mengakses student siapa pun.
+// 1. Student tersebut adalah miliknya sendiri.
+// 2. Role user mempunyai permission anyPermission.
 //
-// 2. Jika user tidak memiliki permission tersebut,
-//    user hanya boleh mengakses student yang owner_id-nya
-//    sama dengan ID user.
-//
-// 3. Jika tidak memenuhi kedua aturan tersebut,
-//    akses ditolak.
+// Jika keduanya tidak terpenuhi, akses ditolak.
 func CanAccessStudent(
-	current StudentAuthUser,
+	current model.AuthUser,
 	ownerID int,
-	permissions *helper.PermissionSet,
+	perms *helper.PermissionSet,
 	anyPermission string,
 ) bool {
-	// Admin atau role lain yang memiliki permission
-	// untuk mengakses semua student diperbolehkan.
-	if permissions != nil &&
-		permissions.Can(current.Role, anyPermission) {
+
+	// Ownership selalu memberikan akses.
+	if current.UserID == ownerID {
 		return true
 	}
 
-	// Jika tidak memiliki akses semua data,
-	// user hanya boleh mengakses data miliknya sendiri.
-	return current.ID == ownerID
+	// Jika bukan pemilik, harus memiliki permission khusus.
+	return perms.Can(
+		current.Role,
+		anyPermission,
+	)
 }

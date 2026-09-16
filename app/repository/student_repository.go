@@ -30,6 +30,7 @@ type StudentRepository interface {
 	Create(
 		ctx context.Context,
 		req model.CreateStudentRequest,
+		ownerID int,
 	) (*model.Student, error)
 
 	Replace(
@@ -129,6 +130,7 @@ func (r *studentRepositoryImpl) List(
 		"name":      "name",
 		"grade":     "grade",
 		"is_active": "is_active",
+		"owner_id":  "owner_id",
 	}
 
 	orderBy, ok := allowedSort[sortBy]
@@ -151,7 +153,8 @@ func (r *studentRepositoryImpl) List(
 			nim,
 			name,
 			grade,
-			is_active
+			is_active,
+			owner_id
 		FROM students
 		%s
 		ORDER BY %s %s
@@ -178,15 +181,14 @@ func (r *studentRepositoryImpl) List(
 	for rows.Next() {
 		var student model.Student
 
-		err := rows.Scan(
+		if err := rows.Scan(
 			&student.ID,
 			&student.NIM,
 			&student.Name,
 			&student.Grade,
 			&student.IsActive,
-		)
-
-		if err != nil {
+			&student.OwnerID,
+		); err != nil {
 			return nil, 0, err
 		}
 
@@ -215,7 +217,8 @@ func (r *studentRepositoryImpl) FindByID(
 			nim,
 			name,
 			grade,
-			is_active
+			is_active,
+			owner_id
 		FROM students
 		WHERE id = $1
 		`,
@@ -226,6 +229,7 @@ func (r *studentRepositoryImpl) FindByID(
 		&student.Name,
 		&student.Grade,
 		&student.IsActive,
+		&student.OwnerID,
 	)
 
 	if err != nil {
@@ -242,6 +246,7 @@ func (r *studentRepositoryImpl) FindByID(
 func (r *studentRepositoryImpl) Create(
 	ctx context.Context,
 	req model.CreateStudentRequest,
+	ownerID int,
 ) (*model.Student, error) {
 
 	var student model.Student
@@ -253,26 +258,30 @@ func (r *studentRepositoryImpl) Create(
 			nim,
 			name,
 			grade,
-			is_active
+			is_active,
+			owner_id
 		)
-		VALUES ($1, $2, $3, $4)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING
 			id,
 			nim,
 			name,
 			grade,
-			is_active
+			is_active,
+			owner_id
 		`,
 		req.NIM,
 		req.Name,
 		req.Grade,
 		req.IsActive,
+		ownerID,
 	).Scan(
 		&student.ID,
 		&student.NIM,
 		&student.Name,
 		&student.Grade,
 		&student.IsActive,
+		&student.OwnerID,
 	)
 
 	if err != nil {
@@ -305,7 +314,8 @@ func (r *studentRepositoryImpl) Replace(
 			nim,
 			name,
 			grade,
-			is_active
+			is_active,
+			owner_id
 		`,
 		req.NIM,
 		req.Name,
@@ -318,6 +328,7 @@ func (r *studentRepositoryImpl) Replace(
 		&student.Name,
 		&student.Grade,
 		&student.IsActive,
+		&student.OwnerID,
 	)
 
 	if err != nil {
@@ -397,7 +408,8 @@ func (r *studentRepositoryImpl) Patch(
 			nim,
 			name,
 			grade,
-			is_active
+			is_active,
+			owner_id
 	`,
 		strings.Join(sets, ", "),
 		argNumber,
@@ -415,6 +427,7 @@ func (r *studentRepositoryImpl) Patch(
 		&student.Name,
 		&student.Grade,
 		&student.IsActive,
+		&student.OwnerID,
 	)
 
 	if err != nil {

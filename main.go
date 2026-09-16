@@ -110,13 +110,58 @@ func main() {
 	tokenRepository :=
 		repository.NewTokenRepository(pool)
 
+	roleRepository :=
+		repository.NewRoleRepository(pool)
+
 	// ========================================================
-	// 7. SERVICE
+	// 7. LOAD RBAC PERMISSIONS
+	// ========================================================
+
+	permissionsByRole, err :=
+		roleRepository.LoadPermissions(
+			context.Background(),
+		)
+
+	if err != nil {
+
+		logger.Error(
+			"gagal memuat permission RBAC",
+			slog.String(
+				"error",
+				err.Error(),
+			),
+		)
+
+		os.Exit(1)
+	}
+
+	permissions :=
+		helper.NewPermissionSet(
+			permissionsByRole,
+		)
+
+	logger.Info(
+		"permission RBAC berhasil dimuat",
+		slog.Any(
+			"roles",
+			permissions.KnownRoles(),
+		),
+	)
+
+	// ========================================================
+	// 8. SERVICE
 	// ========================================================
 
 	studentService :=
 		service.NewStudentService(
 			studentRepository,
+			permissions,
+		)
+
+	userService :=
+		service.NewUserService(
+			userRepository,
+			permissions,
 		)
 
 	authService :=
@@ -124,6 +169,7 @@ func main() {
 			userRepository,
 			tokenRepository,
 			jwtManager,
+			permissions,
 
 			time.Duration(
 				config.GetEnvInt(
@@ -134,7 +180,7 @@ func main() {
 		)
 
 	// ========================================================
-	// 8. APP
+	// 9. APP
 	// ========================================================
 
 	app := config.NewApp(
@@ -144,8 +190,13 @@ func main() {
 
 			JWT: jwtManager,
 
+			Permissions: permissions,
+
 			StudentService:
 				studentService,
+
+			UserService:
+				userService,
 
 			AuthService:
 				authService,
@@ -153,7 +204,7 @@ func main() {
 	)
 
 	// ========================================================
-	// 9. SERVER
+	// 10. SERVER
 	// ========================================================
 
 	port := config.GetEnv(
@@ -188,7 +239,7 @@ func main() {
 	)
 
 	// ========================================================
-	// 10. GRACEFUL SHUTDOWN
+	// 11. GRACEFUL SHUTDOWN
 	// ========================================================
 
 	quit := make(

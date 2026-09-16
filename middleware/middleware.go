@@ -68,9 +68,7 @@ func RequestLogger(
 		requestID, _ :=
 			c.Locals("requestid").(string)
 
-		logger.Info(
-			"http_request",
-
+		attrs := []any{
 			slog.String(
 				"request_id",
 				requestID,
@@ -100,6 +98,27 @@ func RequestLogger(
 				"ip",
 				c.IP(),
 			),
+		}
+
+		// Tambahkan identitas user jika sudah login.
+		if user, ok := helper.CurrentUser(c); ok {
+
+			attrs = append(
+				attrs,
+				slog.Int(
+					"user_id",
+					user.UserID,
+				),
+				slog.String(
+					"role",
+					user.Role,
+				),
+			)
+		}
+
+		logger.Info(
+			"http_request",
+			attrs...,
 		)
 
 		return err

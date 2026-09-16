@@ -14,7 +14,11 @@ type Dependencies struct {
 
 	JWT *helper.JWTManager
 
+	Permissions *helper.PermissionSet
+
 	StudentService *service.StudentService
+
+	UserService *service.UserService
 
 	AuthService *service.AuthService
 }
@@ -28,9 +32,9 @@ func Register(
 		"/api/v1",
 	)
 
-	// ========
+	// ========================================================
 	// PUBLIC
-	// ========
+	// ========================================================
 
 	api.Get(
 		"/health",
@@ -59,96 +63,158 @@ func Register(
 		},
 	)
 
-	// ================
+	// ========================================================
 	// AUTHENTICATION
-	// ================
+	// ========================================================
 
 	auth := api.Group(
 		"/auth",
 		middleware.RequireJSON,
 	)
 
-	// Register
 	auth.Post(
 		"/register",
 		deps.AuthService.Register,
 	)
 
-	// Login + rate limiter
 	auth.Post(
 		"/login",
 		middleware.LoginRateLimiter(),
 		deps.AuthService.Login,
 	)
 
-	// Refresh token
 	auth.Post(
 		"/refresh",
 		deps.AuthService.Refresh,
 	)
 
-	// Logout
 	auth.Post(
 		"/logout",
 		deps.AuthService.Logout,
 	)
 
-	// Profile
 	auth.Get(
 		"/me",
-		middleware.RequireAuth(
-			deps.JWT,
-		),
+		middleware.RequireAuth(deps.JWT),
 		deps.AuthService.Me,
 	)
 
-	// =======================
-	// STUDENTS - WAJIB LOGIN
-	// =======================
+	// ========================================================
+	// USERS
+	// ========================================================
+
+	users := api.Group(
+		"/users",
+		middleware.RequireJSON,
+		middleware.RequireAuth(deps.JWT),
+	)
+
+	// Bisa diputuskan langsung berdasarkan permission.
+	users.Get(
+		"/",
+		middleware.RequirePermission(
+			deps.Permissions,
+			"user:list",
+		),
+		deps.UserService.List,
+	)
+
+	users.Post(
+		"/",
+		middleware.RequirePermission(
+			deps.Permissions,
+			"user:update:any",
+		),
+		deps.UserService.Create,
+	)
+
+	users.Delete(
+		"/:id",
+		middleware.RequirePermission(
+			deps.Permissions,
+			"user:delete",
+		),
+		deps.UserService.Delete,
+	)
+
+	users.Patch(
+		"/:id/role",
+		middleware.RequirePermission(
+			deps.Permissions,
+			"role:assign",
+		),
+		deps.UserService.AssignRole,
+	)
+
+	// Ownership diperiksa di service.
+	users.Get(
+		"/:id",
+		deps.UserService.Get,
+	)
+
+	users.Put(
+		"/:id",
+		deps.UserService.Replace,
+	)
+
+	users.Patch(
+		"/:id",
+		deps.UserService.Patch,
+	)
+
+	// ========================================================
+	// STUDENTS
+	// ========================================================
 
 	students := api.Group(
 		"/students",
-		middleware.RequireAuth(
-			deps.JWT,
-		),
+		middleware.RequireAuth(deps.JWT),
 	)
 
-	// GET /students
+	// Permission dapat diputuskan tanpa membaca data.
 	students.Get(
 		"/",
+		middleware.RequirePermission(
+			deps.Permissions,
+			"student:list",
+		),
 		deps.StudentService.List,
 	)
 
-	// GET /students/:id
+	students.Post(
+		"/",
+		middleware.RequireJSON,
+		middleware.RequirePermission(
+			deps.Permissions,
+			"student:create",
+		),
+		deps.StudentService.Create,
+	)
+
+	students.Delete(
+		"/:id",
+		middleware.RequirePermission(
+			deps.Permissions,
+			"student:delete",
+		),
+		deps.StudentService.Delete,
+	)
+
+	// Ownership diperiksa di service.
 	students.Get(
 		"/:id",
 		deps.StudentService.Get,
 	)
 
-	// POST /students
-	students.Post(
-		"/",
-		middleware.RequireJSON,
-		deps.StudentService.Create,
-	)
-
-	// PUT /students/:id
 	students.Put(
 		"/:id",
 		middleware.RequireJSON,
 		deps.StudentService.Replace,
 	)
 
-	// PATCH /students/:id
 	students.Patch(
 		"/:id",
 		middleware.RequireJSON,
 		deps.StudentService.Patch,
-	)
-
-	// DELETE /students/:id
-	students.Delete(
-		"/:id",
-		deps.StudentService.Delete,
 	)
 }

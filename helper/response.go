@@ -55,3 +55,25 @@ func Fail(
 		},
 	)
 }
+
+func FailValidation(
+	c *fiber.Ctx,
+	errors any,
+) error {
+
+	return Fail(
+		c,
+		fiber.StatusUnprocessableEntity,
+		"validasi gagal",
+		errors,
+	)
+}
+
+func NoContent(
+	c *fiber.Ctx,
+) error {
+
+	return c.SendStatus(
+		fiber.StatusNoContent,
+	)
+}
